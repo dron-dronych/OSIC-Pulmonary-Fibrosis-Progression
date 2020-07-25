@@ -1,5 +1,6 @@
 import random
 import pydicom
+import tensorflow as tf
 
 
 def load_dicom(img_path):
