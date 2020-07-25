@@ -35,3 +35,44 @@ def load_random_dicoms(dicom_dir, n_imag=5, seed=22):
         load_dicom(im)
 
         counter += 1
+
+
+def prepare_dataset(dirname, train=False):
+    """"""
+    dataset = load_dataset(dirname)
+
+    if train:
+        pass
+
+    # TODO can replace parallel calls w/ AUTOTUNE
+    dataset = dataset.map(parse_image, num_parallel_calls=4)
+
+    dataset = dataset.batch(BATCH_SIZE)
+    dataset = dataset.repeat()
+    dataset = dataset.prefetch()
+
+    return dataset
+
+
+def load_dataset(img_dir, fvc_dir=None):
+    """"""
+    filenames = tf.io.gfile.glob(img_dir + '/*/*.dcm')
+
+    if fvc_dir:
+        labels = get_labels(fvc_dir)
+        dataset = tf.data.Dataset.from_tensor_slices((filenames, labels))
+
+    else:
+        dataset = tf.data.Dataset.from_tensor_slices((filenames))
+
+    return dataset
+
+
+def parse_image(filename):
+    """"""
+    dataset = pydicom.dcmread(img_path)
+    img = dataset.pixel_array
+
+    img = tf.image.resize_images(img, IMG_RESIZE)
+
+    return img
