@@ -77,3 +77,9 @@ def parse_image(filename):
     img = tf.image.resize_images(img, IMG_RESIZE)
 
     return img
+
+
+def get_labels(df, filename):
+    """"""
+    patient_data = df[df['Patient'] == filename]
+    return patient_data['FVC']
