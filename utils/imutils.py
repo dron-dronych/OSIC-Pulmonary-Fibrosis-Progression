@@ -38,12 +38,13 @@ def load_random_dicoms(dicom_dir, n_imag=5, seed=22):
         counter += 1
 
 
-def prepare_dataset(dirname, train=False):
+def prepare_dataset(dirname, train=False, label_dir=None):
     """"""
-    dataset = load_dataset(dirname)
 
     if train:
-        pass
+        dataset = load_dataset(dirname, fvc_dir=label_dir)
+    else:
+        dataset = load_dataset(dirname)
 
     # TODO can replace parallel calls w/ AUTOTUNE
     dataset = dataset.map(parse_image, num_parallel_calls=4)
@@ -58,9 +59,10 @@ def prepare_dataset(dirname, train=False):
 def load_dataset(img_dir, fvc_dir=None):
     """"""
     filenames = tf.io.gfile.glob(img_dir + '/*/*.dcm')
+    dataset = tf.data.Dataset.from_tensor_slices((filenames))
 
     if fvc_dir:
-        labels = get_labels(fvc_dir)
+        dataset.map()
         dataset = tf.data.Dataset.from_tensor_slices((filenames, labels))
 
     else:
@@ -71,7 +73,7 @@ def load_dataset(img_dir, fvc_dir=None):
 
 def parse_image(filename):
     """"""
-    dataset = pydicom.dcmread(img_path)
+    dataset = pydicom.dcmread(filename)
     img = dataset.pixel_array
 
     img = tf.image.resize_images(img, IMG_RESIZE)
@@ -79,7 +81,8 @@ def parse_image(filename):
     return img
 
 
-def get_labels(df, filename):
+def get_labels(label_path, filename):
     """"""
+    df = pd.read_csv(label_path)
     patient_data = df[df['Patient'] == filename]
     return patient_data['FVC']
