@@ -72,16 +72,10 @@ def load_dataset(img_dir, fvc_dir=None, train_df=None):
 
 def parse_image(filename):
     """"""
-    func = lambda x: tf.py_function(
-        func=tensor_to_string, inp=[x], Tout=tf.string
-    )
-    filename_ = func(filename)
-    print(filename_)
-    print(filename_.numpy())
-    dataset = pydicom.dcmread(filename_)
-    img = dataset.pixel_array
+    image_bytes = tf.io.read_file(filename)
+    image = tfio.image.decode_dicom_image(image_bytes, dtype=tf.uint16)
 
-    img = tf.image.resize_images(img, IMG_RESIZE)
+    img = tf.image.resize_image(image, IMG_RESIZE)
 
     return img
 
