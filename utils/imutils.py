@@ -38,13 +38,15 @@ def load_random_dicoms(dicom_dir, n_imag=5, seed=22):
         counter += 1
 
 
-def prepare_dataset(dirname, train=False, label_dir=None):
+def prepare_dataset(dirname, train=False, label_dir=None, fvc_dir=None, train_df=None):
     """"""
+    dataset = load_dataset(dirname, fvc_dir=fvc_dir, train_df=train_df)
+    #     dataset = dataset.map(lambda x: tf.py_function(
+    #         func=tensor_to_string, inp=[x], Tout=tf.string
+    #     ))
 
     if train:
-        dataset = load_dataset(dirname, fvc_dir=label_dir)
-    else:
-        dataset = load_dataset(dirname)
+        pass
 
     # TODO can replace parallel calls w/ AUTOTUNE
     dataset = dataset.map(parse_image, num_parallel_calls=4)
@@ -56,24 +58,27 @@ def prepare_dataset(dirname, train=False, label_dir=None):
     return dataset
 
 
-def load_dataset(img_dir, fvc_dir=None):
+def load_dataset(img_dir, fvc_dir=None, train_df=None):
     """"""
-    filenames = tf.io.gfile.glob(img_dir + '/*/*.dcm')
-    dataset = tf.data.Dataset.from_tensor_slices((filenames))
+    filenames = tf.io.gfile.glob(str(img_dir + '*/*.dcm'))
+    dataset = tf.data.Dataset.from_tensor_slices(filenames)
 
-    if fvc_dir:
-        dataset.map()
+    if fvc_dir and train_df:
+        dataset = dataset.map(partial(get_label, train_df), num_parallel_calls=4)
         dataset = tf.data.Dataset.from_tensor_slices((filenames, labels))
-
-    else:
-        dataset = tf.data.Dataset.from_tensor_slices((filenames))
 
     return dataset
 
 
 def parse_image(filename):
     """"""
-    dataset = pydicom.dcmread(filename)
+    func = lambda x: tf.py_function(
+        func=tensor_to_string, inp=[x], Tout=tf.string
+    )
+    filename_ = func(filename)
+    print(filename_)
+    print(filename_.numpy())
+    dataset = pydicom.dcmread(filename_)
     img = dataset.pixel_array
 
     img = tf.image.resize_images(img, IMG_RESIZE)
@@ -81,8 +86,11 @@ def parse_image(filename):
     return img
 
 
-def get_labels(label_path, filename):
+def get_label(df, filename):
     """"""
-    df = pd.read_csv(label_path)
     patient_data = df[df['Patient'] == filename]
     return patient_data['FVC']
+
+
+def tensor_to_string(tensor):
+    return tensor
