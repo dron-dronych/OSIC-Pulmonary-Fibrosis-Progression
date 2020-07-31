@@ -75,7 +75,7 @@ def parse_image(filename):
     image_bytes = tf.io.read_file(filename)
     image = tfio.image.decode_dicom_image(image_bytes, dtype=tf.uint16)
 
-    img = tf.image.resize_image(image, IMG_RESIZE)
+    img = tf.image.resize(image, IMG_RESIZE)
 
     return img
 
