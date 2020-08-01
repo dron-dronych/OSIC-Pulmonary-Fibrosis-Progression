@@ -75,7 +75,8 @@ def load_dataset(img_dir, fvc_dir=None, train_df=None):
 def parse_image(filename):
     """"""
     image_bytes = tf.io.read_file(filename)
-    image = tfio.image.decode_dicom_image(image_bytes, dtype=tf.uint16)
+    image = tfio.image.decode_dicom_image(image_bytes, on_error='strict',
+                                          dtype=tf.uint32)
 
     img = tf.image.resize(image, IMG_RESIZE)
 
