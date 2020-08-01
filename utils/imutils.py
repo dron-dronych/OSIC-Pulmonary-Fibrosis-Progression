@@ -86,7 +86,3 @@ def get_label(df, filename):
     """"""
     patient_data = df[df['Patient'] == filename]
     return patient_data['FVC']
-
-
-def tensor_to_string(tensor):
-    return tensor
