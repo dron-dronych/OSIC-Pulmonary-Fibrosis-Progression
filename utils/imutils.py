@@ -1,6 +1,11 @@
 import random
-import pydicom
+import tensorflow_io as tfio
 import tensorflow as tf
+
+
+IMG_RESIZE = [500, 500]
+BATCH_SIZE = 16
+BUFFER_SIZE = 16
 
 
 def load_dicom(img_path):
@@ -41,9 +46,6 @@ def load_random_dicoms(dicom_dir, n_imag=5, seed=22):
 def prepare_dataset(dirname, train=False, label_dir=None, fvc_dir=None, train_df=None):
     """"""
     dataset = load_dataset(dirname, fvc_dir=fvc_dir, train_df=train_df)
-    #     dataset = dataset.map(lambda x: tf.py_function(
-    #         func=tensor_to_string, inp=[x], Tout=tf.string
-    #     ))
 
     if train:
         pass
@@ -53,7 +55,7 @@ def prepare_dataset(dirname, train=False, label_dir=None, fvc_dir=None, train_df
 
     dataset = dataset.batch(BATCH_SIZE)
     dataset = dataset.repeat()
-    dataset = dataset.prefetch()
+    dataset = dataset.prefetch(BUFFER_SIZE)
 
     return dataset
 
