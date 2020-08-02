@@ -76,11 +76,11 @@ def parse_image(filename):
     """"""
     image_bytes = tf.io.read_file(filename)
     image = tfio.image.decode_dicom_image(image_bytes, on_error='strict',
-                                          dtype=tf.uint32)
+                                          dtype=tf.float32)
 
-    img = tf.image.resize(image, IMG_RESIZE)
-
-    return img
+    image = tf.image.resize(image, IMG_RESIZE)
+    image = tf.reshape(image, image.shape[1:3])
+    return image
 
 
 def get_label(df, filename):
