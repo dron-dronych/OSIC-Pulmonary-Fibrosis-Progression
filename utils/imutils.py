@@ -44,7 +44,17 @@ def load_random_dicoms(dicom_dir, n_imag=5, seed=22):
 
 
 def prepare_dataset(dirname, train=False, label_dir=None, fvc_dir=None, train_df=None):
-    """"""
+    """
+    prepare a tensorflow dataset for optimal operations
+    in batches allowing for big dataset sizes
+
+    :param dirname: str
+    :param train: boolean
+    :param label_dir: str
+    :param fvc_dir: str
+    :param train_df: pd.DataFrame
+    :return: tf.data.Dataset
+    """
     dataset = load_dataset(dirname, fvc_dir=fvc_dir, train_df=train_df)
 
     if train:
@@ -61,7 +71,13 @@ def prepare_dataset(dirname, train=False, label_dir=None, fvc_dir=None, train_df
 
 
 def load_dataset(img_dir, fvc_dir=None, train_df=None):
-    """"""
+    """
+    loads image + label (optional) data
+    :param img_dir: str
+    :param fvc_dir: str
+    :param train_df: pd.Dataframe
+    :return: tf.data.Dataset
+    """
     filenames = tf.io.gfile.glob(str(img_dir + '*/*.dcm'))
     dataset = tf.data.Dataset.from_tensor_slices(filenames)
 
@@ -73,7 +89,12 @@ def load_dataset(img_dir, fvc_dir=None, train_df=None):
 
 
 def parse_image(filename):
-    """"""
+    """
+    reads DICOM image and resizes to bring all to
+    common size for training and inference
+    :param filename: str
+    :return: img: tf.Tensor
+    """
     image_bytes = tf.io.read_file(filename)
     image = tfio.image.decode_dicom_image(image_bytes, on_error='strict',
                                           dtype=tf.float32)
@@ -84,6 +105,11 @@ def parse_image(filename):
 
 
 def get_label(df, filename):
-    """"""
+    """
+    loads label data for each patient's CT scan
+    :param df: pd.Dataframe
+    :param filename: str
+    :return: patient_fvc_data: pd.Series
+    """
     patient_data = df[df['Patient'] == filename]
     return patient_data['FVC']
