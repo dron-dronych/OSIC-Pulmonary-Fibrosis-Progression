@@ -57,12 +57,8 @@ def prepare_dataset(dirname, train=False, label_dir=None, fvc_dir=None, train_df
     """
     dataset = load_dataset(dirname, fvc_dir=fvc_dir, train_df=train_df)
 
-    if train:
-        pass
-
     # TODO can replace parallel calls w/ AUTOTUNE
     dataset = dataset.map(parse_image, num_parallel_calls=4)
-
     dataset = dataset.batch(BATCH_SIZE)
     dataset = dataset.repeat()
     dataset = dataset.prefetch(BUFFER_SIZE)
@@ -78,13 +74,12 @@ def load_dataset(img_dir, fvc_dir=None, train_df=None):
     :param train_df: pd.Dataframe
     :return: tf.data.Dataset
     """
-    filenames = tf.io.gfile.glob(str(img_dir + '*/*.dcm'))
+    filenames = tf.io.gfile.glob(img_dir + '*/*.dcm')
     dataset = tf.data.Dataset.from_tensor_slices(filenames)
 
-    if fvc_dir and train_df:
-        dataset = dataset.map(partial(get_label, train_df), num_parallel_calls=4)
+    if fvc_dir and train_df is not None:
+        labels = dataset.map(partial(get_label, df=train_df), num_parallel_calls=4)
         dataset = tf.data.Dataset.from_tensor_slices((filenames, labels))
-
     return dataset
 
 
@@ -111,5 +106,14 @@ def get_label(df, filename):
     :param filename: str
     :return: patient_fvc_data: pd.Series
     """
-    patient_data = df[df['Patient'] == filename]
-    return patient_data['FVC']
+    parts = tf.strings.split(filename, os.path.sep)
+    patient_id = parts[-2]
+    df['Patient'] = df['Patient'].apply(tf.constant)
+    ids = []
+
+    for i, j in df['Patient'].iteritems():
+        if j == patient_id:
+            ids.append(i)
+
+    patient_data = df.loc[ids, 'FVC']
+    return patient_data
