@@ -106,14 +106,15 @@ def get_label(df, filename):
     :param filename: str
     :return: patient_fvc_data: pd.Series
     """
+    df_ = df.copy()
     parts = tf.strings.split(filename, os.path.sep)
     patient_id = parts[-2]
-    df['Patient'] = df['Patient'].apply(tf.constant)
+    df_['Patient'] = df_['Patient'].apply(tf.constant)
     ids = []
 
-    for i, j in df['Patient'].iteritems():
-        if j == patient_id:
+    for i, j in df_['Patient'].iteritems():
+        if tf.equal(j, patient_id):
             ids.append(i)
 
-    patient_data = df.loc[ids, 'FVC']
+    patient_data = df_.loc[ids, 'FVC']
     return patient_data
