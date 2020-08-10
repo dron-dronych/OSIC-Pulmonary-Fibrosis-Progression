@@ -80,7 +80,7 @@ def load_dataset(img_dir, fvc_dir=None, train_df=None):
 
     if fvc_col:
         target = patient_data.pop(fvc_col)
-        dataset = tf.data.Dataset.from_tensor_slices(((patient, patient_data), target))
+        dataset = tf.data.Dataset.from_tensor_slices((patient, (patient_data, target)))
     else:
         dataset = tf.data.Dataset.from_tensor_slices((patient, patient_data))
 
