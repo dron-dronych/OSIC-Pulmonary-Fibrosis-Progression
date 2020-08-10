@@ -55,7 +55,7 @@ def prepare_dataset(dirname, train=False, label_dir=None, fvc_dir=None, train_df
     :param train_df: pd.DataFrame
     :return: tf.data.Dataset
     """
-    dataset = load_dataset(dirname, fvc_dir=fvc_dir, train_df=train_df)
+    dataset = load_dataset(patient_df, img_dir=img_dir, fvc_col='FVC')
 
     # TODO can replace parallel calls w/ AUTOTUNE
     dataset = dataset.map(parse_image, num_parallel_calls=4)
@@ -74,16 +74,20 @@ def load_dataset(img_dir, fvc_dir=None, train_df=None):
     :param train_df: pd.Dataframe
     :return: tf.data.Dataset
     """
-    filenames = tf.io.gfile.glob(img_dir + '*/*.dcm')
-    dataset = tf.data.Dataset.from_tensor_slices(filenames)
+    cols = ['FVC', 'Age', 'Patient'] # TODO take out to args
+    patient_data = patient_df[cols].copy()
+    patient = patient_data.pop('Patient')
 
-    if fvc_dir and train_df is not None:
-        labels = dataset.map(partial(get_label, df=train_df), num_parallel_calls=4)
-        dataset = tf.data.Dataset.from_tensor_slices((filenames, labels))
+    if fvc_col:
+        target = patient_data.pop(fvc_col)
+        dataset = tf.data.Dataset.from_tensor_slices(((patient, patient_data), target))
+    else:
+        dataset = tf.data.Dataset.from_tensor_slices((patient, patient_data))
+
     return dataset
 
 
-def parse_image(filename):
+def parse_image(filename, meta):
     """
     reads DICOM image and resizes to bring all to
     common size for training and inference
@@ -91,30 +95,9 @@ def parse_image(filename):
     :return: img: tf.Tensor
     """
     image_bytes = tf.io.read_file(filename)
-    image = tfio.image.decode_dicom_image(image_bytes, on_error='strict',
-                                          dtype=tf.float32)
+    image = tfio.image.decode_dicom_image(image_bytes, on_error='strict', dtype=tf.float32)
 
     image = tf.image.resize(image, IMG_RESIZE)
     image = tf.reshape(image, image.shape[1:3])
-    return image
+    return image, meta
 
-
-def get_label(df, filename):
-    """
-    loads label data for each patient's CT scan
-    :param df: pd.Dataframe
-    :param filename: str
-    :return: patient_fvc_data: pd.Series
-    """
-    df_ = df.copy()
-    parts = tf.strings.split(filename, os.path.sep)
-    patient_id = parts[-2]
-    df_['Patient'] = df_['Patient'].apply(tf.constant)
-    ids = []
-
-    for i, j in df_['Patient'].iteritems():
-        if tf.equal(j, patient_id):
-            ids.append(i)
-
-    patient_data = df_.loc[ids, 'FVC']
-    return patient_data
