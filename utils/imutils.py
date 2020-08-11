@@ -55,7 +55,8 @@ def prepare_dataset(dirname, train=False, label_dir=None, fvc_dir=None, train_df
     :param train_df: pd.DataFrame
     :return: tf.data.Dataset
     """
-    dataset = load_dataset(patient_df, img_dir=img_dir, fvc_col='FVC')
+    cols = ['FVC', 'Age', 'Patient']
+    dataset = load_dataset(patient_df, img_dir, cols, fvc_col='FVC')
 
     # TODO can replace parallel calls w/ AUTOTUNE
     dataset = dataset.map(parse_image, num_parallel_calls=4)
@@ -66,7 +67,7 @@ def prepare_dataset(dirname, train=False, label_dir=None, fvc_dir=None, train_df
     return dataset
 
 
-def load_dataset(img_dir, fvc_dir=None, train_df=None):
+def load_dataset(patient_df, img_dir, features, fvc_col=None):
     """
     loads image + label (optional) data
     :param img_dir: str
@@ -74,8 +75,7 @@ def load_dataset(img_dir, fvc_dir=None, train_df=None):
     :param train_df: pd.Dataframe
     :return: tf.data.Dataset
     """
-    cols = ['FVC', 'Age', 'Patient'] # TODO take out to args
-    patient_data = patient_df[cols].copy()
+    patient_data = patient_df[features].copy()
     patient = patient_data.pop('Patient')
 
     if fvc_col:
