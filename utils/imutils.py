@@ -43,20 +43,20 @@ def load_random_dicoms(dicom_dir, n_imag=5, seed=22):
         counter += 1
 
 
-def prepare_dataset(dirname, train=False, label_dir=None, fvc_dir=None, train_df=None):
+def prepare_dataset(patient_df, img_dir, train=False):
     """
     prepare a tensorflow dataset for optimal operations
     in batches allowing for big dataset sizes
 
-    :param dirname: str
+    :param patient_df: pd.DataFrame
+    :param img_dir: str
     :param train: boolean
-    :param label_dir: str
-    :param fvc_dir: str
-    :param train_df: pd.DataFrame
     :return: tf.data.Dataset
     """
-    cols = ['FVC', 'Age', 'Patient']
-    dataset = load_dataset(patient_df, img_dir, cols, fvc_col='FVC')
+    if train:
+        dataset = load_dataset(patient_df, img_dir=img_dir, fvc_col='FVC')
+    else:
+        dataset = load_dataset(patient_df, img_dir=img_dir)
 
     # TODO can replace parallel calls w/ AUTOTUNE
     dataset = dataset.map(parse_image, num_parallel_calls=4)
@@ -67,12 +67,13 @@ def prepare_dataset(dirname, train=False, label_dir=None, fvc_dir=None, train_df
     return dataset
 
 
-def load_dataset(patient_df, img_dir, features, fvc_col=None):
+def load_dataset(patient_df, img_dir, features=['FVC', 'Age', 'Patient'], fvc_col=None):
     """
     loads image + label (optional) data
+    :param patient_df: pd.DataFrame
+    :param features: list
     :param img_dir: str
-    :param fvc_dir: str
-    :param train_df: pd.Dataframe
+    :param fvc_col: str
     :return: tf.data.Dataset
     """
     patient_data = patient_df[features].copy()
