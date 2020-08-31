@@ -44,15 +44,7 @@ def load_random_dicoms(dicom_dir, n_imag=5, seed=22):
 
 
 def prepare_dataset(patient_df, img_dir, train=False):
-    """
-    prepare a tensorflow dataset for optimal operations
-    in batches allowing for big dataset sizes
-
-    :param patient_df: pd.DataFrame
-    :param img_dir: str
-    :param train: boolean
-    :return: tf.data.Dataset
-    """
+    """"""
     if train:
         dataset = load_dataset(patient_df, img_dir=img_dir, fvc_col='FVC')
     else:
@@ -67,38 +59,45 @@ def prepare_dataset(patient_df, img_dir, train=False):
     return dataset
 
 
-def load_dataset(patient_df, img_dir, features=['FVC', 'Age', 'Patient'], fvc_col=None):
-    """
-    loads image + label (optional) data
-    :param patient_df: pd.DataFrame
-    :param features: list
-    :param img_dir: str
-    :param fvc_col: str
-    :return: tf.data.Dataset
-    """
-    patient_data = patient_df[features].copy()
+def load_dataset(patient_df, img_dir, fvc_col=None):
+    """"""
+    cols = ['FVC', 'Age', 'Patient']
+    patient_data = patient_df[cols].copy()
     patient = patient_data.pop('Patient')
+    patient = patient.apply(lambda x: img_dir + x)
+
+    dataset = tf.data.Dataset.from_tensor_slices(patient)
+    dataset = dataset.map(load_images)
 
     if fvc_col:
         target = patient_data.pop(fvc_col)
-        dataset = tf.data.Dataset.from_tensor_slices((patient, (patient_data, target)))
+
+        meta_dataset = tf.data.Dataset.from_tensor_slices((patient_data, target))
+        #         dataset = dataset.concatenate(meta_dataset)
+        dataset = tf.data.Dataset.zip((dataset, meta_dataset))
     else:
-        dataset = tf.data.Dataset.from_tensor_slices((patient, patient_data))
+        meta_dataset = tf.data.Dataset.from_tensor_slices(patient_data)
+        dataset = dataset.concatenate(meta_dataset)
 
     return dataset
 
 
-def parse_image(filename, meta):
-    """
-    reads DICOM image and resizes to bring all to
-    common size for training and inference
-    :param filename: str
-    :return: img: tf.Tensor
-    """
-    image_bytes = tf.io.read_file(filename)
-    image = tfio.image.decode_dicom_image(image_bytes, on_error='strict', dtype=tf.float32)
+def load_images(patient):
+    filenames = tf.io.matching_files(patient + '/*.dcm')
+    images = tf.py_function(pydicom.dcmread, [filenames], Tout=tf.int64)
+    # TODO fix sorting
+    #     try:
+    #         images.sort(key=lambda x: float(x.ImagePositionPatient[2]))
+    #     except AttributeError:
+    #         warnings.warn(f'Patient {images[0].PatientID} CT scan does not '
+    #                       f'have "ImagePositionPatient". Assuming filenames '
+    #                       f'in the right scan order.')
 
-    image = tf.image.resize(image, IMG_RESIZE)
-    image = tf.reshape(image, image.shape[1:3])
-    return image, meta
+    #     image = np.stack([s.pixel_array.astype(float) for s in images])
+    try:
+        image = tf.math.reduce_sum(images, axis=0)
+    except RuntimeError as e:
+        image = np.nan
+
+    return image
 
