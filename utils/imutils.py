@@ -51,9 +51,9 @@ def prepare_dataset(patient_df, img_dir, train=False):
         dataset = load_dataset(patient_df, img_dir=img_dir)
 
     # TODO can replace parallel calls w/ AUTOTUNE
-    dataset = dataset.map(parse_image, num_parallel_calls=4)
+    #     dataset = dataset.map(parse_image, num_parallel_calls=4)
     dataset = dataset.batch(BATCH_SIZE)
-    dataset = dataset.repeat()
+    #     dataset = dataset.repeat()
     dataset = dataset.prefetch(BUFFER_SIZE)
 
     return dataset
@@ -83,9 +83,15 @@ def load_dataset(patient_df, img_dir, fvc_col=None):
 
 
 def load_images(patient):
+    #     filenames = tf.py_function(glob.glob, [patient + '/*.dcm'], Tout=tf.int64)
     filenames = tf.io.matching_files(patient + '/*.dcm')
-    images = tf.py_function(pydicom.dcmread, [filenames], Tout=tf.int64)
-    # TODO fix sorting
+    #     images = tf.py_function(pydicom.dcmread, [filenames], Tout=tf.int64)
+    #     images = tf.map_fn(lambda x: pydicom.dcmread(x, filenames)
+    image_bytes = tf.map_fn(tf.io.read_file, filenames, dtype=tf.string)
+    images = tf.map_fn(lambda x: tfio.image.decode_dicom_image(x, on_error='strict', dtype=tf.float32), image_bytes,
+                       dtype=tf.float32)
+    images = tf.map_fn(lambda x: tf.image.resize(x, IMG_RESIZE), images)
+
     #     try:
     #         images.sort(key=lambda x: float(x.ImagePositionPatient[2]))
     #     except AttributeError:
@@ -94,10 +100,10 @@ def load_images(patient):
     #                       f'in the right scan order.')
 
     #     image = np.stack([s.pixel_array.astype(float) for s in images])
-    try:
-        image = tf.math.reduce_sum(images, axis=0)
-    except RuntimeError as e:
-        image = np.nan
+    #     try:
+    #         image = tf.math.reduce_sum(images, axis=0)
+    #     except RuntimeError as e:
+    #         image = np.nan
 
-    return image
+    return images
 
