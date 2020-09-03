@@ -52,8 +52,8 @@ def prepare_dataset(patient_df, img_dir, train=False):
 
     # TODO can replace parallel calls w/ AUTOTUNE
     #     dataset = dataset.map(parse_image, num_parallel_calls=4)
-    dataset = dataset.batch(BATCH_SIZE)
-    #     dataset = dataset.repeat()
+    #     dataset = dataset.batch(BATCH_SIZE) # do we need batching with variable # images per scan???
+    dataset = dataset.repeat()
     dataset = dataset.prefetch(BUFFER_SIZE)
 
     return dataset
@@ -106,4 +106,3 @@ def load_images(patient):
     #         image = np.nan
 
     return images
-
