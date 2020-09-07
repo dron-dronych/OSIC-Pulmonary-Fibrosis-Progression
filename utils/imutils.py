@@ -77,7 +77,8 @@ def load_dataset(patient_df, img_dir, fvc_col=None):
         dataset = tf.data.Dataset.zip((dataset, meta_dataset))
     else:
         meta_dataset = tf.data.Dataset.from_tensor_slices(patient_data)
-        dataset = dataset.concatenate(meta_dataset)
+        dataset = tf.data.Dataset.zip((dataset, meta_dataset))
+    #         dataset = dataset.concatenate(meta_dataset)
 
     return dataset
 
