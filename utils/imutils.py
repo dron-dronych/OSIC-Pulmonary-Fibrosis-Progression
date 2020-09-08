@@ -70,15 +70,17 @@ def load_dataset(patient_df, img_dir, fvc_col=None):
     dataset = dataset.map(load_images)
 
     if fvc_col:
-        target = patient_data.pop(fvc_col)
+        target = patient_data.pop(fvc_col).values.reshape(-1, 1)
 
-        meta_dataset = tf.data.Dataset.from_tensor_slices((patient_data, target))
-        #         dataset = dataset.concatenate(meta_dataset)
-        dataset = tf.data.Dataset.zip((dataset, meta_dataset))
+        patient_dataset = tf.data.Dataset.from_tensor_slices(patient_data)
+        target_dataset = tf.data.Dataset.from_tensor_slices(target)
+
+        dataset = tf.data.Dataset.zip((dataset,
+                                       # patient_dataset, ## uncomment for more complex NN architecture
+                                       target_dataset))
     else:
         meta_dataset = tf.data.Dataset.from_tensor_slices(patient_data)
         dataset = tf.data.Dataset.zip((dataset, meta_dataset))
-    #         dataset = dataset.concatenate(meta_dataset)
 
     return dataset
 
@@ -92,7 +94,9 @@ def load_images(patient):
     images = tf.map_fn(lambda x: tfio.image.decode_dicom_image(x, on_error='strict', dtype=tf.float32), image_bytes,
                        dtype=tf.float32)
     images = tf.map_fn(lambda x: tf.image.resize(x, IMG_RESIZE), images)
+    images = tf.map_fn(lambda x: tf.reshape(x, IMG_RESIZE), images)
 
+    # TODO implement stacking via sorting
     #     try:
     #         images.sort(key=lambda x: float(x.ImagePositionPatient[2]))
     #     except AttributeError:
