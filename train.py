@@ -20,6 +20,8 @@ def read_fvc_data(path):
 if __name__ == '__main__':
     args = setup_cli()
     BASE_DIR = args['dataset']
+    model_save_path = args['model']
+
     fvc_train = read_fvc_data(BASE_DIR + 'train.csv')
 
     # get rid of bad images of this patient
@@ -33,3 +35,6 @@ if __name__ == '__main__':
     )
 
     history = model.fit(train, epochs=2, steps_per_epoch=len(fvc_train))
+
+    if model_save_path:
+        model.save(model_save_path, save_format='h5')
