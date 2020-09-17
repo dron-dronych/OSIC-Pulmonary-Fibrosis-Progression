@@ -8,3 +8,7 @@ Open Source Imaging Consortium (OSIC) has provided chest scans and accompanying 
 
 ### Pipeline
 This ML endeavor is particularly targeted at using Tensorflow's tf.data API due to abundance of image data supplemented with tabular patient data with subsequent feature generation techniques. This all makes extensive use of in-memory computations which buries the idea of inference on slower machines.
+
+### Usage
+```
+python3 train.py --dataset [PATH_TO_BASE_DIR]
