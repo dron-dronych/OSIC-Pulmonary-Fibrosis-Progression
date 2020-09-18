@@ -2,6 +2,7 @@ import utils.imutils as iut
 import utils.utils as utils
 import argparse
 import pandas as pd
+import os
 
 
 def setup_cli():
@@ -22,12 +23,13 @@ if __name__ == '__main__':
     BASE_DIR = args['dataset']
     model_save_path = args['model']
 
-    fvc_train = read_fvc_data(BASE_DIR + 'train.csv')
+    fvc_train = read_fvc_data(os.path.join(BASE_DIR, 'train.csv'))
+    print(os.path.join(BASE_DIR, 'train.csv'))
 
     # get rid of bad images of this patient
     fvc_train = fvc_train[fvc_train['Patient'] != 'ID00052637202186188008618']
 
-    TRAIN_IMG_DIR = BASE_DIR + 'train/'
+    TRAIN_IMG_DIR = os.path.join(BASE_DIR, 'train')
     train = iut.prepare_dataset(fvc_train, TRAIN_IMG_DIR, train=True)
 
     model = utils.build_model(

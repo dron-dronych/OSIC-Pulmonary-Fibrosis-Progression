@@ -1,6 +1,7 @@
 import random
 import tensorflow_io as tfio
 import tensorflow as tf
+import os
 
 
 IMG_RESIZE = [500, 500]
@@ -64,7 +65,7 @@ def load_dataset(patient_df, img_dir, fvc_col=None):
     cols = ['FVC', 'Age', 'Patient']
     patient_data = patient_df[cols].copy()
     patient = patient_data.pop('Patient')
-    patient = patient.apply(lambda x: img_dir + x)
+    patient = patient.apply(lambda x: os.path.join(img_dir, x))
 
     dataset = tf.data.Dataset.from_tensor_slices(patient)
     dataset = dataset.map(load_images)
