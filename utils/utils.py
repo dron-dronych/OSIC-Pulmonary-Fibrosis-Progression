@@ -48,3 +48,23 @@ def build_model(input_shape):
                   )
 
     return model
+
+
+def build_conv_net(input_shape):
+    inputs = layers.Input(shape=input_shape)
+    x = layers.Conv2D(32, (3, 3))(inputs)
+    x = layers.Conv2D(3, (3, 3))(x)
+    # TODO check why it throws OOM on this layer
+    x = layers.Dense(128, activation='relu')(x)
+    x = layers.Dense(64, activation='relu')(x)
+    preds = layers.Dense(1, activation='linear')(x)
+
+    model = keras.Model(inputs=[inputs],
+                        outputs=[preds]
+                        )
+    model.compile(optimizer='adam',
+                  loss=keras.losses.MeanAbsoluteError(),
+                  metrics=laplace_log_likelihood
+                  )
+
+    return model
